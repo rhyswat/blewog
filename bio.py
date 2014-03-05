@@ -1,6 +1,7 @@
 # Based on answer 2 here:
 # http://stackoverflow.com/questions/17409107/obtaining-data-from-pubmed-using-python
 
+import io
 import os.path
 import sys
 
@@ -19,33 +20,28 @@ def fetch_abstract(pmid):
         article = xml_data['MedlineCitation']['Article']
         abstract = article['Abstract']['AbstractText'][0]
         return abstract
-    except KeyError :
-        return '<CANNOT UNDERSTAND THE DATA RETURNED>'
-    except Bio.Entrez.Parser.NotXMLError :
-        return '<BAD XML>'
-    except IndexError:
-        return None
+    except Exception as e :
+        return '{}: {}'.format(e.__class__.__name__, e)
 
 
 if __name__ == '__main__' :
     ids = [10024335, 10027665, 10027935, 10028936,
-           10029645,10029788,10030325,10047639,
-           10049657,10051289,10053176,10063787,
-           10066961,10067800,10069777,10072218,
-           10073748,10073783,10073846,10075143]
+           10073748,10073783,10073846,10075143,
+           7641605, 'ericthered']
            
     def fetch(pubmed_id, f=sys.stdout) :
-        f.write('\n')
-        f.write('Abstract for pubmed ID {}\n'.format(i))
+        f.write(u'\n')
+        f.write(u'Abstract for pubmed ID {}\n'.format(i))
         a = fetch_abstract(str(i))
         if a is None :
-            f.write('<NOTHING RETURNED>\n')
+            f.write(u'<NOTHING RETURNED>\n')
         else :
-            f.write(a)
-            f.write('\n')
+            f.write(unicode(a))
+            print a
+            f.write(u'\n')
 
     output = os.path.join(os.path.dirname(__file__), 'output.txt')
-    with open(output, 'w') as f :
+    with io.open(output, 'w', encoding='utf-8') as f :
         for i in ids :
             print ''
             print 'Fetching ID',i
