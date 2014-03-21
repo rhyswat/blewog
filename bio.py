@@ -25,10 +25,12 @@ def fetch_abstract(pmid):
 
 
 if __name__ == '__main__' :
-    ids = [10024335, 10027665, 10027935, 10028936,
-           10073748,10073783,10073846,10075143,
-           7641605, 'ericthered']
-           
+    #ids = [10024335, 10027665, 10027935, 10028936,
+    #       10073748,10073783,10073846,10075143,
+    #       7641605, 'ericthered']
+
+    ids = [10934787, 11718459, 10951880]    
+       
     def fetch(pubmed_id, f=sys.stdout) :
         f.write(u'\n')
         f.write(u'Abstract for pubmed ID {}\n'.format(i))
@@ -37,7 +39,6 @@ if __name__ == '__main__' :
             f.write(u'<NOTHING RETURNED>\n')
         else :
             f.write(unicode(a))
-            print a
             f.write(u'\n')
 
     output = os.path.join(os.path.dirname(__file__), 'output.txt')
