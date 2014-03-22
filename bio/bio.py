@@ -67,9 +67,10 @@ if __name__ == '__main__' :
     else :
         output = os.path.join(os.path.dirname(__file__), args.output)
         with io.open(args.output, 'w', encoding='utf-8') as f :
+            n = 1
             for i in identifiers :
-                print ''
-                print 'Fetching ID',i
+                print 'Fetching ID {} ({}/{})'.format(i, n, len(identifiers))
                 fetch_and_write(i, f=f)
                 f.flush()
+                n += 1
 
