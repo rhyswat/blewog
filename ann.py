@@ -16,17 +16,19 @@ class ANN:
     
     This implementation uses the sigmoid transfer function t(z) = 1/(1+exp(-z))
     '''
-    def __init__(self, *sizes, seed=None, learning_rate=1):
+    def __init__(self, *sizes, seed=None, learning_rate=0.75, momentum=0.1):
         '''
         Pass in a list of integers:
           number of nodes in input layer, num in next layer, ..., num in output layer
         '''
         self.learning_rate = learning_rate # 0 < rate <= 1
+        self.momentum = momentum # 0 < mom < 1
         self.rand = random.Random(seed)
 
         self.outputs = dict()  # neuron number => activation
         self.weights = dict()  # digraph of index(number-from, number-to) => weight
         self.deltas = dict()   # neuron number => its error
+        self.old_deltas = collections.defaultdict(float)
         self.targets = dict()  # output neuron number => what its activation should be
         c = itertools.count(1) # node number generator
         self.layers = []      # list of neuron numbers in each layer
@@ -42,7 +44,7 @@ class ANN:
                 if len(self.layers) > 0:
                     # not the input layer -> create randomised initial weights
                     for _from in self.layers[-1]:
-                        self.set_weight(_from, num, self.rand.uniform(-1, 1))
+                        self.set_weight(_from, num, self.rand.uniform(-0.5, 0.5))
             self.layers.append(this_layer)
 
     # --------------------------------------------------------------------------
@@ -69,7 +71,7 @@ class ANN:
 
     # increment the weight value for the link i -> j by dw
     def add_weight(self, i, j, dw):
-        self.weights[self.index(i,j)] += dw
+        self.weights[self.index(i,j)] += (dw + self.momentum*self.old_deltas[self.index(i,j)])
 
     # get a list of node numbers where weight(*, num) exists
     def links_to(self, num):
@@ -129,6 +131,7 @@ class ANN:
     def train(self, inputs, expected_outputs):
         self.feed_forward(inputs)
         self.back_propagate(expected_outputs)
+        self.old_deltas = collections.defaultdict(float, self.deltas)
 
     # feed the input through the network and return the activations of the output layer
     def evaluate(self, inputs):
@@ -159,16 +162,13 @@ def learn_xor():
     # input layer = 2 elements [x, y] which will be 0 or 1
     # output layer = 1 element which should be x XOR y
     # arbitraray choice of hidden layers
-    ann = ANN(2, 4, 1)
-    ann.show()
+    rnd = random.Random(76545)
+    training = [([0, 0], [0]), ([0, 1], [1]), ([1, 0], [1]), ([1, 1], [0])]
+    ann = ANN(2, 3, 1, momentum=0.1)
     for i in range(1000):
-        ann.train([0, 0], [0])
-        ann.train([0, 1], [1])
-        ann.train([1, 0], [1])
-        ann.train([1, 1], [0])
-        if i > 100 and ann.total_error() < 1e-4: # occasionally fails whatever this is set to
-            print('Breaking early at ' + str(i+1))
-            break
+        for _in, _out in training:
+            ann.train(_in, _out)
+        rnd.shuffle(training) # Big help!
     print('Total error = {}'.format(ann.total_error()))
     for y in [0, 1]:
         for x in [0, 1]:
@@ -252,19 +252,20 @@ def learn_irises():
     print('Partitioned into {} training items and {} test items'.format(len(training), len(test)))
  
     # make and train the ann
-    ann = ANN(4, 6, 3, len(classes), seed=9090, learning_rate=0.8) # one hidden layer
-    e1 = float('Infinity')
-    e2 = 0
+    ann = ANN(4, 6, 3, len(classes), seed=9090, momentum=0.05, learning_rate=0.5)
+    e1 = 0
+    e2 = float('Infinity')
     for epoch in range(1000):
         if (epoch + 1) % 50 == 0:
             print('Epoch {}...'.format(epoch+1))
         for t in training:
             ann.train(t.as_input(), t.as_output(classes))
-        e2 = ann.total_error()
-        if e2 < 1e-6 or e2 > e1: # needs to be small, not allowed to get worse
+        e1 = ann.total_error()
+        if e2 < 1e-7 and e1 > e2: # last bit tries to avoid overfitting
             print('Breaking at epoch {} with error {}'.format(epoch+1, e2))
             break
-        err = e2
+        e2 = e1
+        rnd.shuffle(training) # present in a different order @ next epoch
     print('Trained the thing, error is {}'.format(ann.total_error()))
 
     # helper that takes the output [x, y, z] and returns the class
@@ -291,5 +292,10 @@ def learn_irises():
         print('Class {}, {:.2f}% correct out of {}'.format(clz, 100.0*count / len(test_classes[clz]), len(test_classes[clz])))
 
 if __name__ == '__main__':
-    #learn_xor()
+    print()
+    print(' -- XOR --')
+    learn_xor()
+
+    print()
+    print('-- IRISES --')
     learn_irises()
