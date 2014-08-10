@@ -37,22 +37,23 @@ class Team :
         self.draws = 0
         self.defeats = 0
         # Each state is {p(win), p(draw), p(lose)}
+        # Each transition = P(win|won last), P(win|draw_last), ... etc
         self.transitions = {'W':State(1,1,1), 'D':State(1,1,1), 'L':State(1,1,1)}
-        for t in self.transitions.values() :
+        for t in list(self.transitions.values()) :
             t.normalise()
 
     def details(self) :
-        print self.name
-        print '   win-transitions =',self.transitions['W']
-        print '  draw-transitions =',self.transitions['D']
-        print '  lose-transitions =',self.transitions['L']
-        print '       last-result =', self.last_result
+        print(self.name)
+        print('   win-transitions =',self.transitions['W'])
+        print('  draw-transitions =',self.transitions['D'])
+        print('  lose-transitions =',self.transitions['L'])
+        print('       last-result =', self.last_result)
 
     def get_transitions(self) :
         return self.transitions[self.last_result]
 
     def set_transitions(self, **tx) :
-        for k,v in tx.iteritems() :
+        for k,v in tx.items() :
             if k in self.transitions :
                 s = State(*v)
                 s.normalise()
@@ -88,18 +89,22 @@ class Team :
 def league_order(a, b) :
     return cmp((a.points(), a.wins, a.draws, a.name), (b.points(), b.wins, b.draws, b.name))
 
-def print_league(unsorted_teams) :
-    teams = sorted(unsorted_teams, cmp=league_order, reverse=True)
+def league_key(a):
+    return (a.points(), a.wins, a.draws, a.name)
+
+def print_league(league) :
+    unsorted_teams = league.values()
+    teams = sorted(unsorted_teams, key=league_key, reverse=True)
     longest = max(len(t.name) for t in teams)
     fmt = '{:%s} |  W |  D |  L | Pts |' % longest
     s = fmt.format('Team')
-    print ('=' * len(s))
-    print s
-    print ('=' * len(s))
+    print(('=' * len(s)))
+    print(s)
+    print(('=' * len(s)))
     fmt = '{:%s} | {:2d} | {:2d} | {:2d} | {:3d} |' % longest
     for t in teams :
-        print fmt.format(t.name, t.wins, t.draws, t.defeats, t.points())
-    print ('=' * len(s))
+        print(fmt.format(t.name, t.wins, t.draws, t.defeats, t.points()))
+    print(('=' * len(s)))
     
 def make_league() :
     # need an even number
@@ -128,26 +133,28 @@ def make_league() :
     for name in names :
         teams[name] = Team(name)
 
-    # vary the teams
-    teams['Cardiff City'].set_transitions(W=(10,1,1))
-    teams['Everton'].set_transitions(D=(10,10,1))
-    
-    
-    return teams.values()
+    # randomise the teams
+    for n in names:
+        teams[n].set_transitions(W=(random.uniform(0,1), random.uniform(0,1), random.uniform(0,1)))
+        teams[n].set_transitions(L=(random.uniform(0,1), random.uniform(0,1), random.uniform(0,1)))
+        teams[n].set_transitions(D=(random.uniform(0,1), random.uniform(0,1), random.uniform(0,1)))
+
+    return teams
 
 def make_schedule(teams) :
     n = len(teams)
-    n2 = n/2
-    homes, aways = teams[:n2], teams[n2:]
+    n2 = n//2
+    names = list(teams.keys())
+    homes, aways = names[:n2], names[n2:]
 
     # round-robin scheduling using homes[0] as the pivot,
     # this generates the first half of the season only,
     # so we simultaneously construct the second half by mirroring.
     first = []
     second = []
-    for i in xrange(n-1) :
-        first.append([(homes[j], aways[j]) for j in xrange(n2)])
-        second.append([(aways[j], homes[j]) for j in xrange(n2)])
+    for i in range(n-1) :
+        first.append([(teams[homes[j]], teams[aways[j]]) for j in range(n2)])
+        second.append([(teams[aways[j]], teams[homes[j]]) for j in range(n2)])
         x = homes.pop(-1)
         y = aways.pop(0)
         homes.insert(1, y)
@@ -181,21 +188,18 @@ def play(home, away) :
         away.draw()
 
 if __name__ == '__main__' :
-    random.seed(2435L)
+    import sys
+    try:
+        random.seed(int(sys.argv[1]))
+        print('Using seed', sys.argv[1])
+    except:
+         print('Not setting seed')
     league = make_league()
     schedule = make_schedule(league)
-    r = 1
     for rnd in schedule :
         for match in rnd :            
             play(*match)
-            # then update probabilities....
-        r += 1
-    print ''
-    print 'Season over:'
+            # then update probabilities to model form...
+    print('')
+    print('Season over:')
     print_league(league)
-
-    #print ''
-    #print 'Final transitions:'
-    #for team in league :
-    #    team.details()
-
