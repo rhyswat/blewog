@@ -49,12 +49,13 @@ class ANN:
     # Pairing functions for weights
     # There are lots of strategies:
     # - Cantor pairing
-    # - ....
-    # - bit packing, e.g. 2 4-byte ints into a 8-byte long
+    # - Szudzik's function
+    # - bit packing two N-byte values into one 2N-byte value (which this class does)
     # See http://stackoverflow.com/questions/919612/mapping-two-integers-to-one-in-a-unique-and-deterministic-way
     # and http://en.wikipedia.org/wiki/Pairing_function
     
-    # pack two non-negative (but signed) ints into a long
+    # pack two non-negative integers into one
+    # this limits the total number of nodes to 2^16-1 = 65535
     def index(self, a, b):
         return a << 16 | b
 
