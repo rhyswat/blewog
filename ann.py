@@ -16,12 +16,12 @@ class ANN:
     
     This implementation uses the sigmoid transfer function t(z) = 1/(1+exp(-z))
     '''
-    def __init__(self, *sizes, seed=None):
+    def __init__(self, *sizes, seed=None, learning_rate=1):
         '''
         Pass in a list of integers:
           number of nodes in input layer, num in next layer, ..., num in output layer
         '''
-        self.learning_rate = 0.95 # 0 < l
+        self.learning_rate = learning_rate # 0 < rate <= 1
         self.rand = random.Random(seed)
 
         self.outputs = dict()  # neuron number => activation
@@ -180,6 +180,116 @@ def learn_xor():
             else:
                 result = 0
             print('Testing {}: expected={}, actual={}'.format(xy, x ^ y, result))
-    
+
+# the infamous iris data set
+# https://archive.ics.uci.edu/ml/datasets/Iris
+# corrections applied to 35th and 38th samples
+def learn_irises():
+    import os.path
+    # One row of data in the iris data set
+    class Datum(list):
+
+        def __init__(self, f1, f2, f3, f4, label):
+            super(list, self).__init__()
+            self.extend([f1, f2, f3, f4, label])
+
+        def label(self):
+            return self[-1]
+
+        def as_input(self):
+            return self[:4]
+        
+        def as_output(self, classes):
+            out = [0]*len(classes)
+            i = classes.index(self.label())
+            out[i] = 1.0
+            return out            
+
+        def normalise(self, feature_index, _min, _max):
+            self[feature_index] = (self[feature_index] - _min) / (_max - _min)
+
+        def __hash__(self):
+            return hash(tuple(self))
+
+    # read it all into a flat list
+    all_data = []
+    with open(os.path.join(os.path.dirname(__file__), 'iris.data'), 'rt') as f:
+        for x in f:
+            items = x.strip().split(',')
+            if len(items) == 5:
+                ff = [float(y) for y in items[:-1]] + [items[-1].strip()]
+                all_data.append(Datum(*ff))
+    print('I have loaded', len(all_data), 'items')
+
+    # normalisation: feature_n now lies between 0 and 1 inclusive
+    minima = [min(all_data, key=lambda x:x[i]) for i in range(4)]
+    minima = [minima[i][i] for i in range(4)]
+    maxima = [max(all_data, key=lambda x:x[i]) for i in range(4)]
+    maxima = [maxima[i][i] for i in range(4)]
+    for d in all_data:
+        for i in range(4):
+            d.normalise(i, minima[i], maxima[i])
+
+    # partition into classes
+    by_class = collections.defaultdict(list)
+    for d in all_data:
+        by_class[d.label()].append(d)
+    classes = list(by_class.keys())
+
+    # partition into a training and test set 'at random'
+    rnd = random.Random(6543)
+    train_pct = 20 # percent of data that go into the training set
+    training = []
+    test = []
+    for label, datum_list in by_class.items():
+        n = (len(datum_list) * train_pct) // 100
+        s = rnd.sample(range(len(datum_list)), n)
+        for i in range(len(datum_list)):
+            if i in s:
+                training.append(datum_list[i])
+            else:
+                test.append(datum_list[i])
+    print('Partitioned into {} training items and {} test items'.format(len(training), len(test)))
+ 
+    # make and train the ann
+    ann = ANN(4, 6, 3, len(classes), seed=9090, learning_rate=0.8) # one hidden layer
+    e1 = float('Infinity')
+    e2 = 0
+    for epoch in range(1000):
+        if (epoch + 1) % 50 == 0:
+            print('Epoch {}...'.format(epoch+1))
+        for t in training:
+            ann.train(t.as_input(), t.as_output(classes))
+        e2 = ann.total_error()
+        if e2 < 1e-6 or e2 > e1: # needs to be small, not allowed to get worse
+            print('Breaking at epoch {} with error {}'.format(epoch+1, e2))
+            break
+        err = e2
+    print('Trained the thing, error is {}'.format(ann.total_error()))
+
+    # helper that takes the output [x, y, z] and returns the class
+    # corresponding to the max of these.
+    def to_class(x):
+        z = max(x)
+        i = x.index(z)
+        return classes[i]
+
+    # test it
+    correct = collections.defaultdict(int)
+    for c in classes:
+        correct[c] = 0
+    test_classes = collections.defaultdict(list)
+    for t in test:
+        test_classes[t.label()].append(t)
+    for t in test:
+        o = ann.evaluate(t.as_input())
+        a = to_class(o)
+        if t.label() == a:
+            correct[t.label()] += 1
+    print('Results:')
+    for clz, count in correct.items():
+        print('Class {}, {:.2f}% correct out of {}'.format(clz, 100.0*count / len(test_classes[clz]), len(test_classes[clz])))
+
 if __name__ == '__main__':
-    learn_xor()
+    #learn_xor()
+    learn_irises()
