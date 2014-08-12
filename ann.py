@@ -14,12 +14,51 @@ class ANN:
     The data structures don't use Nodes directly. Instead each node is represented by
     an integer nymber; each layer is a list of the numbers of the nodes in that layer.
     
-    This implementation uses the sigmoid transfer function t(z) = 1/(1+exp(-z))
+    This implementation uses the sigmoid transfer function t(z) = 1/(1+exp(-z)).
+
+    Updates should be applied sequentially, so for example one epoch of training
+    looks like this:
+    
+    >>> ann = ANN(2, 3, 4) # for example
+    >>> for input, output in training_set:
+    ...   ann.train(input, output)
+
+    Multiple epochs should shuffle the training data between presentations to combat
+    over-fitting, thus:
+
+    >>> import random
+    >>> ann = ANN(2, 3, 4) # for example
+    >>> for n in range(num_epochs) # several hundred is a good start
+    ...    for input, output in training_set:
+    ...       ann.train(input, output)
+    ...    random.shuffle(training_set)
+
+    Shuffling seems to lead to faster convergence as well.
+
+    The error in the network is implemented as the sum of the squares of the most
+    recently trained error at each node in the network. The user may choose to stop
+    the epoch loop when (a) the error gets below some threshold, or (b) when the error
+    starts to *increase* compared with the previous epoch. The latter case may be a
+    symptom of climbing out of a local minimum in weight space.
+
+    Inputs should be normalised to so that their mean over the training set is close to zero.
+    (Haykyn, 1999, pp. 181-182).
+    
+    The output should be limited to being within the range of the activation function,
+    which in this case is (-1, +1) and ideally in (-1 + epsilon, 1 - epsilon) for some
+    small epsilon > 0 to avoid saturation (Haykyn, 1999, p. 181).
+
+    These last two points are actually a problem for the _user_ of this class,
+    not the ANN itself.
     '''
     def __init__(self, *sizes, seed=None, learning_rate=0.75, momentum=0.1):
         '''
         Pass in a list of integers:
           number of nodes in input layer, num in next layer, ..., num in output layer
+
+        The learning rate should satisfy 0 < rate, and in practice 0.05 <= rate < 0.8
+        The momentum should satisfy 0 <= mom < 1. If >= 1 then the momentum causes the
+        weight sum to oscillate (Haykyn, 1999, pp. 169-171)
         '''
         self.learning_rate = learning_rate # 0 < rate <= 1
         self.momentum = momentum # 0 < mom < 1
