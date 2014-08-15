@@ -66,6 +66,7 @@ module Classifier
       @cc[cat] = @cc[cat] + 1
     end
     
+    # the number of times this category has been associated with this feature
     def fcount(f, cat)
       return @fc[f][cat].to_f if (@fc.include?(f) && @fc[f].include?(cat))
       return 0.0
@@ -155,7 +156,7 @@ module Classifier
       catcount(c)/totalcount()
     end
     
-    # Posterior     = Prior * Likellihood / Evidene
+    # Posterior     = Prior * Likelihood / Evidene
     # P(Class|Item) = P(Class) * P(Item|Class) / Evidence
     # This computes the numerator for the posterior because Evidence is constant
     # Note that Sum(Posteriors/all classes) = 1 including at the beginning

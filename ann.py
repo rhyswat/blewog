@@ -13,6 +13,14 @@ class ANN:
     This implementation is based on https://www4.rgu.ac.uk/files/chapter3%20-%20bp.pdf
     The data structures don't use Nodes directly. Instead each node is represented by
     an integer nymber; each layer is a list of the numbers of the nodes in that layer.
+
+    To make a network with 3 nodes in the input layer, two hidden layers of 6 and 4
+    nodes respectively, and an output layer of two nodes:
+    >>> ann = ANN(3, 6, 4, 2)
+    >>>
+    The network is fully connected, so each node in a given layer is connected
+    to every node in the next layer (except of course the output layer, which is
+    not connected to anything).
     
     This implementation uses the sigmoid transfer function t(z) = 1/(1+exp(-z)).
 
@@ -87,15 +95,17 @@ class ANN:
             self.layers.append(this_layer)
 
     # --------------------------------------------------------------------------
-    # Pairing functions for weights
-    # There are lots of strategies:
+    # Pairing functions for weight indices
+    # The weight dictionary is: weight[index(i, j)] = weight_from_node_i_to_node_j
+    #
+    # There are lots of strategies for pairing:
     # - Cantor pairing
     # - Szudzik's function
     # - bit packing two N-byte values into one 2N-byte value (which this class does)
     # See http://stackoverflow.com/questions/919612/mapping-two-integers-to-one-in-a-unique-and-deterministic-way
     # and http://en.wikipedia.org/wiki/Pairing_function
     
-    # pack two non-negative integers into one
+    # pack two non-negative integers into one larger value
     # this limits the total number of nodes to 2^16-1 = 65535
     def index(self, a, b):
         return a << 16 | b
@@ -125,7 +135,7 @@ class ANN:
     def transfer(self, z):
         return 1/(1 + math.exp(-z))
 
-    # dt/dz = t(z)(1-t(z)
+    # dt/dz = t(z)(1-t(z))
     def transfer_prime(self, t):
         return t*(1-t)
 
