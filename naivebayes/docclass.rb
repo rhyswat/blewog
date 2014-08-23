@@ -6,9 +6,9 @@ module Classifier
   # ----------------------------------------------------------------------------
   # demo methods
 
-  def test_bayes()
+  def self.test_bayes()
     b = Classifier::NaiveBayes.new
-    Classifier.train(b)
+    train(b)
     
     [['quick rabbit', :good], ['quick rabbit', :bad]].each do |(item, c)|
       p = b.prob(c, item)
@@ -19,7 +19,7 @@ module Classifier
     c = b.classify('quick money')
     puts "'quick money' is #{c}"
     
-    10.times { |n| Classifier.train(b) }
+    10.times { |n| train(b) }
     puts "After re-training...."
     c = b.classify('quick money')
     puts "'quick money' is #{c}"
@@ -27,7 +27,7 @@ module Classifier
 
   # ----------------------------------------------------------------------------
   # bootstrap training
-  def Classifier.train(cl)
+  def self.train(cl)
     cl.train('Nobody owns the water', :good)
     cl.train('the quick rabbit jumps fences', :good)
     cl.train('buy pharmaceuticals now', :bad)
@@ -167,9 +167,12 @@ module Classifier
     
   end
   
-end
+end # module Classifier
 
 # Test code
 if __FILE__ == $0
-
+  include Classifier
+  puts 'Testing crappy spam filter'
+  Classifier::test_bayes
+  puts 'Done'
 end
