@@ -51,9 +51,11 @@ class NodeSource:
         self.items = []
 
     def pop(self):
+	'''Pops the first item on the list.'''
         return self.items.pop(0)
 
     def add(self, nodes):
+	'''Appends the collection of nodes to the list.'''
         self.items.extend(nodes)
 
     def is_empty(self):
