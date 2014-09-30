@@ -30,9 +30,9 @@ class Graph:
     def prune(self, n):
         '''
         Removes all edges starting at n, returning those
-        vertices that were connected to n.
-        Those vertices could still have in-edges from other vertices.
-        '''
+        vertices that were connected to n but now have out-degree zero.
+        That returned set may be empty, but not None.
+	'''
         pruned = set()
         for m, i in self.graph.items():
             if n in i:
